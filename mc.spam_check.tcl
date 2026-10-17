@@ -1,5 +1,5 @@
 ##
-# Spam Check v2.5
+# Spam Check v2.5.1
 #  by MC_8 - Carl M. Gregory <mc8@purehype.net>
 #  This script will only run on eggdrop 1.6.13 or greater.
 #
@@ -282,9 +282,9 @@ foreach {temp(name) temp(value)} [array get mc_sc :config:*] {
 set mc_sc(info:loc) [info script]
 array set mc_sc [list \
   script                 "Spam Check" \
-  version                "v2.5" \
+  version                "v2.5.1" \
   svs:script             "spamcheck" \
-  svs:version            "002005000000" \
+  svs:version            "002005001000" \
   svs:client_version     "v4.0.1" \
   svs:client_svs_version "004000001000" \
   svs:server             "mc.svs.purehype.net" \
@@ -727,9 +727,9 @@ proc mc:sc:punish_ {nick uhost hand chan warn method message} {
         set temp(x) [list %filename $filename]
         set msg [mc:sc:replace -- $msg \
           [list %nick $nick %method $method %message $message]]
-        foreach user [chanlist $channel] {
-          if {![isop $user $channel]} {continue}
-          putserv "$to $channel :$msg"
+        foreach user [chanlist $chan] {
+          if {![isop $user $chan]} {continue}
+          putserv "$to $chan :$msg"
         }
         lappend x_done "$to'd ops (not opped)"
       }
@@ -1355,6 +1355,10 @@ putlog "$mc_sc(script) $mc_sc(version) by MC_8 loaded."
 ##
 # History  ( <Fixed by> - [Found by] - <Information> )
 ##
+# v2.5.1 (07.02.03)
+#  MC_8 - Wolfgang - Fixed 'can't read "channel": no such variable'.
+#                    Bugzilla Bug 292
+#
 # v2.5 (06.09.03)
 #  MC_8 -            - Upgraded SVS client.  v3.0.1 -> v4.0.1
 #  MC_8 - Jennifer / - Fixed 'couldn't compile regular expression pattern:
