@@ -1,16 +1,11 @@
 ##
-# Spam Check v2.1 by MC_8 - Carl M. Gregory <gregory@worldinter.net>
+# Spam Check v2.2 by MC_8 - Carl M. Gregory <gregory@worldinter.net>
 #  This script will only work on eggdrop 1.5+ series.
 #
 # If you have any questions/comments/idea's, please email me!
 # ( Include the script name and version in the title, if you do email me. )
 #
-# My SVS Website - http://mc.purehype.net/
-##
-
-##
-# This script plus alot of other mc.* scripts are best found at
-# http://bseen.tclslave.net/
+# My SVS Website - http://mc.purehype.net:81/
 ##
 
 ##
@@ -34,6 +29,36 @@
 ##
 # History
 ##
+# v2.2 (10.30.01)
+#  MC_8 - Rewrote explination of ban masking types.
+#  MC_8 - Rewrote the ban masking proc again, much smaller now.
+#  MC_8 - Ban types 10-19 were not masking the host.domain correctly if it
+#         was an ip address.
+#  MC_8 - Ban type 3, 4, 8 and 9 wasn't masking the host correctly.
+#  MC_8 - Sharren Kandou - Ban types 10-19 were giving tcl errors.  'TCL error
+#                       [mc:bw:pubm]: syntax error in expression "[regexp --
+#                       {^1[0-9]$} $type] &&', fixed.
+#  MC_8 - Kitt - Add new configs file option: 'nocycle:mode'
+#  MC_8 - Sharren - Script was acting screwing with special character's in
+#                   the spammers nick.  Fixed.
+#  MC_8 - Removed 'glob_ban' option, it's not needed since I added the auto
+#         search for feature (read next history entry), and also intigrated
+#         it into 'ban:anyhow'.
+#  MC_8 - If the spammer is not in a channel the bot is in, the script will
+#         search the channels it's on for a matching ip/hostname.
+#  MC_8 - Script was hackable, all a spammer had to do was NOTICE users with
+#         "DCC " at the beginning of the spam messange and the bot would of
+#         just ignored the user.  Fixed.
+#             KatzEye reported something simular, but not exactly this.
+#             Still showing partial credit in history.
+#  MC_8 - Reworte filt proc, it's smaller and more effecent.
+#  MC_8 - Rewrote the ban masking proc, it's quicker.
+#  MC_8 - Removed the findip/ sindex/ srange proc.
+#  MC_8 - Made minor changes to the SVS client section -- to give proper
+#         error if an invalid user is specified to recieve a notification
+#         of a newer version.
+#  MC_8 - Revamped the coding (alot of minor stuff, to much to write here).
+#
 # v2.1 (08.27.01)
 #  MC_8 - Found problems with DCC and MESSAGE cases when checking the mc_sc(act:wrds).
 #         If act:wrds was set to more than 1 thing, DCC and MESSAGE would require that
@@ -41,7 +66,7 @@
 #  MC_8 - Alchera - Fixed issues with string index not recognizing the "e" or "end",
 #                   quickly fixed with [expr [string length $var]-1] insted of "e".
 #  MC_8 - Cleaned up relay message, if another bot is going to relay more than 1 channel,
-#         it is only nessessary to say "Spam Check: Bot relay from Africana regarding xxx."
+#         it is only nessessary to say "Spam Check: Bot relay from <bot> regarding <nick>."
 #         only once.
 #  MC_8 - Alchera - Fixed issues with relay's regarding channels the bot isn't in giving
 #                   off invalid channel errors.
@@ -230,6 +255,15 @@ set mc_sc(act:strip) 1
 # Set to 0:0 to turn off the cycling of the channels.
 set mc_sc(sc:cyclerate) 9:20
 
+# If you don't want to cycle if the channel is at a certin mode, set it here.
+# You can set as many as you like, seperate each set with a space.  Set this
+# to "" to disable.
+# Example:
+#   "+i-nt +k +sm" == Will not cycle if the channel has a +i, and does NOT have
+#                     a +n and a +t.  Or, will not cycle if the channel has a +k.
+#                     Or, will not cycle if the channel has a +s and +m.
+set mc_sc(nocycle:mode) ""
+
 # How long do you want to stay gone from the channel?  The bot will /part and wait
 # x amount of seconds before /join'n.  (Only for eggdrop1.3.28 and greater)
 # Set to 0 for quick cycle.
@@ -307,6 +341,7 @@ set mc_sc(exc:message:notice) "Anti Spam, Don't notice me."
 set mc_sc(exc:message:invite) "Anti Spam, Don't invite me to your lame channel."
 
 # Set this to the ban mask type you what,
+#  Default == 5
 #      0 - *!user@host.domain
 #      1 - *!*user@host.domain
 #      2 - *!*@host.domain
@@ -317,14 +352,14 @@ set mc_sc(exc:message:invite) "Anti Spam, Don't invite me to your lame channel."
 #      7 - nick!*@host.domain
 #      8 - nick!*user@*.domain
 #      9 - nick!*@*.domain
-#     You can also specify a type of 10 to 19 which correspond to masks 0 to 9, but
-#     instead of using a * wildcard to replace portions of the host.domain, it uses ?
-#     wildcards to replace the numbers in the address.
+#     You can also specify a type of 10 to 19 which correspond to masks 0 
+#     to 9.  But if the host.domain is a;
+#       hostname = Instead of using a * wildcard to replace portions of the
+#                  host.domain, it replaces the numbers in the host.domain 
+#                  with a '?' (question mark) wildcard
+#       ip       = It will mask as normal, with no '?' (question mark)
+#                  replacments as does hostname.
 set mc_sc(bant) 2
-
-# [0=no/1=yes] What if the user isn't in the channel... Do you want me to
-# still set the ban globally?
-set mc_sc(glob_ban) 1
 
 # [0=no/1=yes] If the bot isn't op'd, do you want it to ask the bot's 
 # in the botnet to punish the user?
@@ -347,7 +382,7 @@ set mc_sc(relay:key) "spamcheck"
 # setting.
 set mc_sc(ban:anyhow) 1
 
-## MC SVS (Script Version Server) v1.2 ##
+## MC SVS (Script Version Server) v1.3 ##
 # Do you want the bot to connection to MC_8's SVS to see if there are newer versions
 # of this script avilable?  It will only tell you -- It's up to you to get the newest
 # version (I decided not to auto update the code, there may be new features in the
@@ -364,10 +399,10 @@ set mc_sc(svs:enabled) 1
 #  set mc_sc(svs:check) 23  ;#This is at 11pm
 set mc_sc(svs:check) 3
 
-# Upon finding a newer version, who do you want to notify via note?
-# Only the admin of the bot should really be worried about these notes,
-# there the ones that keep everything up to par on the bots.
-# Seperate each user with a " " (space).
+# Upon finding a newer version of this script, who do you want this script
+# to send a note to telling them of this newer version?
+# If more than 1 user is to be notified, seperate each user with a
+# ' ' (space).
 set mc_sc(svs:notify) "MC_8"
 
 # Do you want even beta version notified to whomever you have set?  Or just
@@ -384,10 +419,11 @@ set mc_sc(svs:stableonly) 0
 ##
 
 ##
-# Coding 
+# Coding below, do not proceed unless you are a programmer.
 ##
-set mc_sc(version) v2.1
-set mc_sc(svs:script) "spamcheck 002001000000"
+
+set mc_sc(version) v2.2
+set mc_sc(svs:script) "spamcheck 002002000000"
 set mc_sc(svs:server) "mc.purehype.net 8085"
 
 if {$numversion < "1050000"} {
@@ -402,8 +438,7 @@ if {![string match *mc:sc:cycle* [timers]]} {
  if {$min >= $max} {set cycletime $max} {
   set cycletime [rand [expr $max+1]]
   while {$cycletime < $min} {set cycletime [rand [expr $max+1]]}
- }
- timer $cycletime mc:sc:cycle
+ };timer $cycletime mc:sc:cycle
 }
 if {[info exists mc_sc(joind:active)]} {unset mc_sc(joind:active)}
 set mc_sc(ign:wrds) [string tolower $mc_sc(ign:wrds)]
@@ -424,25 +459,50 @@ proc mc:sc:msg:command:spamcheck {nick uhost hand args} {
 proc mc:sc:cycle {} {
  global mc_sc numversion botnick
  foreach chan [string tolower [channels]] {
-  if {[string match "* -spamcycle *" " [channel info $chan] "]} {continue}
+  if {![mc:sc:inter:chanflagison $chan spamcycle]} {continue}
   if {[isop $botnick $chan]} {
    set onlyop 1
-   foreach user [chanlist $chan] {
-    if {($user != $botnick) && [isop $user $chan]} {set onlyop 0 ; break}
-   } ; if {$onlyop} {putlog "Spam Check, Cannot cycle $chan, I am the only op.";continue}
+   foreach user [string tolower [chanlist $chan]] {
+    if {($user != [string tolower $botnick]) && [isop $user $chan]} {set onlyop 0 ; break}
+   } ; if {$onlyop} {putlog "Spam Check: Cannot cycle $chan, I am the only op.";continue}
+  }
+  set channel_mode [lindex [getchanmode $chan] 0]
+  set pos_chan_mode "" ; set neg_chan_mode ""
+  regexp -- {\+([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $channel_mode temp pos_chan_mode
+  regexp -- {\-([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $channel_mode temp neg_chan_mode
+  foreach nocymod $mc_sc(nocycle:mode) {  
+   set pos_mode "" ; set neg_mode ""
+   regexp -- {\+([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $nocymod temp pos_mode
+   regexp -- {\-([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $nocymod temp neg_mode
+   set a 1
+   foreach mode [split $pos_mod ""] {
+    if {![string match *$mode* $pos_chan_mod]} {set a 0;break}
+   }
+   set b 1
+   foreach mode [split $neg_mod ""] {
+    if {![string match *$mode* $neg_chan_mod]} {set b 0;break}
+   }
+   set c 1
+   foreach mode [split $neg_mod ""] {
+    if {[string match *$mode* $pos_chan_mod]} {set c 0;break}
+   }
+   if {[expr $a && $b && $c]} {
+    putlog "Spam Check: Cannot cycle $chan, channel mode is: $channel_mode / nocycle mode is $nocymod"
+    return 0
+   }
   }
   if {($numversion >= "1032800") && $mc_sc(joind)} {
-   if {[string match *-inactive* [channel info $chan]]} {
+   if {![mc:sc:inter:chanflagison $chan inactive]} {
     channel set $chan +inactive
     utimer $mc_sc(joind) "channel set [mc:sc:filt $chan] -inactive"
     if {![string match "*unset mc_sc(joind:active)*" [utimers]]} {
      utimer [expr $mc_sc(joind)+[expr [llength [channels]]*5]] "catch {unset mc_sc(joind:active)}"
     } ; set mc_sc(joind:active) 1
    }
-  } {
+  } else {
    if {$mc_sc(chan:cycle:message) != ""} {
     putserv "PART $chan :$mc_sc(chan:cycle:message)"
-   } {putserv "PART $chan"}
+   } else {putserv "PART $chan"}
   }
  }
  set min [lindex [split $mc_sc(sc:cyclerate) :] 0]
@@ -450,573 +510,301 @@ proc mc:sc:cycle {} {
  if {$min >= $max} {set cycletime $max} {
   set cycletime [rand [expr $max+1]]
   while {$cycletime < $min} {set cycletime [rand [expr $max+1]]}
- }
- if {![string match *mc:sc:cycle* [timers]]} {timer $cycletime mc:sc:cycle}
+ };if {![string match *mc:sc:cycle* [timers]]} {timer $cycletime mc:sc:cycle}
+}
+
+bind raw - INVITE mc:sc:raw:invite
+proc mc:sc:raw:invite {from key arg} {
+ global mc_sc botnick
+ scan $from {%[^!]!%[^@]@%s} nick ident host
+ set hand [finduser $from]
+ scan $arg {%[^:]:%s} temp chan
+ if {$mc_sc(warn:message:invite) == ""} {return 0}
+ if {$mc_sc(act:strip)} {set chan [mc:sc:inter:strip:all $chan]}
+ set arg "invite $chan"
+ set return 1
+ foreach word [string tolower [split $mc_sc(act:wrds) \n]] {
+  if {[join $word] == ""} {continue}
+  if {[string match [string trim $word] [string tolower $arg]]} {
+   set return 0;break
+  }
+ };if {$return} {return 0};mc:sc:message $nick $ident@$host $hand invite
 }
 
 bind notc - * mc:sc:notc:message
-bind msgm - * mc:sc:msgm:message
-bind ctcp - "DCC" mc:sc:dcc:message
-bind raw - INVITE mc:sc:raw:invite
-
-proc mc:sc:raw:invite {from key args} {
- global mc_sc botnick
- if {$mc_sc(warn:message:invite) == ""} {return 0}
- if {$mc_sc(act:strip)} {set argz [mc:sc:inter:strip:all [join $args]]} {set argz [join $args]}
- set argz "invite [string trimleft [lindex [split [join $argz]] 1] :]"
- set return 1
- foreach word [split $mc_sc(act:wrds) \n] {
-  if {[string match [string tolower [string trim $word]] [string tolower $argz]]} {
-   set return 0;break
-  }
- };if {$return} {return}
- set nick [string range $from 0 [expr [string first ! $from]-1]]
- set uhost [string range $from [expr [string first ! $from]+1] end]
- mc:sc:message $nick $uhost [finduser $from] invite;return 0
-}
-
-proc mc:sc:notc:message {nick uhost hand args {dest ""}} {
+proc mc:sc:notc:message {nick uhost hand arg {dest ""} {DCC_Check ""}} {
  global mc_sc botnick ; if {$dest == ""} {set dest $botnick}
- if {([lindex [split $args] 0] == "DCC") || ($dest != $botnick)} {return}
- if {$mc_sc(warn:message:notice) == ""} {return}
- if {$mc_sc(act:strip)} {set argz [mc:sc:inter:strip:all $args]} {set argz $args}
+ if {($dest != $botnick) || ($mc_sc(warn:message:notice) == "")} {return 0}
+ if {([regexp -- {^DCC } $arg]) && ($DCC_Check == "")} {
+  utimer 5 "mc:sc:notc:message [list $nick $uhost $hand $arg $dest DCC_Check]"
+  return 0
+ }
+ if {$mc_sc(act:strip)} {set arg [mc:sc:inter:strip:all $arg]}
  set return 1
- foreach word [split $mc_sc(act:wrds) \n] {
-  if {[string match [string tolower [string trim $word]] [string tolower $argz]]} {
+ foreach word [string tolower [split $mc_sc(act:wrds) \n]] {
+  if {[join $word] == ""} {continue}
+  if {[string match [string trim $word] [string tolower $arg]]} {
    set return 0;break
   }
- };if {$return} {return}
- foreach command $mc_sc(ign:wrds) {
-  if {[string tolower [lindex [split $args] 0]] == $command} {return 0}
+ };if {$return} {return 0}
+ scan $arg %s cmd
+ foreach command [string tolower $mc_sc(ign:wrds)] {
+  if {[string tolower $cmd] == $command} {return 0}
  };mc:sc:message $nick $uhost $hand notice
 }
 
-proc mc:sc:msgm:message {nick uhost hand args} {
+bind msgm - * mc:sc:msgm:message
+proc mc:sc:msgm:message {nick uhost hand arg} {
  global mc_sc
- if {$mc_sc(warn:message:privmsg) == ""} {return}
- if {$mc_sc(act:strip)} {set argz [mc:sc:inter:strip:all [join $args]]} {set argz [join $args]}
+ if {$mc_sc(warn:message:privmsg) == ""} {return 0}
+ if {$mc_sc(act:strip)} {set arg [mc:sc:inter:strip:all $arg]}
  set return 1
- foreach word [split $mc_sc(act:wrds) \n] {
+ foreach word [string tolower [split $mc_sc(act:wrds) \n]] {
   if {[join $word] == ""} {continue}
-  if {[string match [string tolower [string trim $word]] [string tolower $argz]]} {
-   set return 0; break
+  if {[string match [string trim $word] [string tolower $arg]]} {
+   set return 0;break
   }
- }; if {$return} {return 0}
+ };if {$return} {return 0}
+ scan $arg %s cmd
  foreach command [string tolower $mc_sc(ign:wrds)] {
-  if {[string tolower [lindex [split [join $args]] 0]] == $command} {return 0}
+  if {[string tolower $cmd] == $command} {return 0}
  };mc:sc:message $nick $uhost $hand privmsg
 }
 
-proc mc:sc:dcc:message {nick uhost hand dest keyword args} {
- global mc_sc
- switch -- [lindex [join $args] 0] {
-  SEND {set method "dccsend [lindex [join $args] 1]"}
-  CHAT {return 0}
-  default {return 0}
- }
- if {$mc_sc(warn:message:dccsend) == ""} {return 0}
- set argz $method
- if {$mc_sc(act:strip)} {set argz [mc:sc:inter:strip:all $argz]}
- set return 1
- foreach word [split $mc_sc(act:wrds) \n] {
-  if {[join $word] == ""} {continue}
-  if {[string match [string tolower [string trim $word]] [string tolower $argz]]} {
-   set return 0; break
+bind ctcp - "DCC" mc:sc:dcc:message
+proc mc:sc:dcc:message {nick uhost hand dest keyword arg} {
+ global mc_sc botnick
+ scan $arg {%s %s %s %s %s} cmd file ip port size
+ if {($mc_sc(warn:message:dccsend) == "") || ($cmd != "SEND") ||
+     ($dest != $botnick)} {return 0}
+ set arg "dccsend $file"
+ foreach utimer [string tolower [utimers]] {
+  set timer [lindex $utimer 1]
+  scan $timer {%s %s %s %s %s %s} t_cmd t_nick t_uhost t_hand t_arg t_dest t_dcc_test
+  if {[lindex $utimer 1] == [string tolower "mc:sc:notc:message [list $nick $uhost $hand $t_arg $t_dest $t_dcc_test]"]} {
+   killutimer [lindex $utimer 2];break
   }
- }; if {$return} {return 0}
- mc:sc:message $nick "$nick!$uhost" $hand "$method";return 0
+ };if {$mc_sc(act:strip)} {set arg [mc:sc:inter:strip:all $arg]}
+ set return 1
+ foreach word [string tolower [split $mc_sc(act:wrds) \n]] {
+  if {[join $word] == ""} {continue}
+  if {[string match [string trim $word] [string tolower $arg]]} {
+   set return 0;break
+  }
+ };if {$return} {return 0};mc:sc:message $nick $uhost $hand $arg
 }
 
-proc mc:sc:message {nick uhost hand method} {
- global mc_sc botnick lastbind
- if {[string tolower $nick] == [string tolower $botnick]} {return}
- if {[info exists mc_sc(ignore:$nick)]} {
-  if {![string match "*unset mc_sc(ignore:$nick)*" [utimers]]} {
-   utimer 5 "catch {unset mc_sc(ignore:[mc:sc:filt $nick])}"
-  } ; return 0
- }
- set mc_sc(ignore:$nick) 1
- utimer 5 "catch {unset mc_sc(ignore:[mc:sc:filt $nick])}"
- set uhost [string range $uhost [expr [string first ! $uhost]+1] end]
- if {[info exists mc_sc(joind:active)]} {
-  utimer [expr $mc_sc(joind)+2] "mc:sc:message [mc:sc:filt $nick] [mc:sc:filt $uhost] [mc:sc:filt $hand] {[mc:sc:filt $method]}"
-  if {![string match "*unset mc_sc(joind:active)*" [utimers]]} {
-   utimer $mc_sc(joind) "unset mc_sc(joind:active)"
-  };return
- };set channels "";set i 0
- foreach chan [string tolower [channels]] {
-  if {[onchan $nick $chan]} {set i 1;append channels " $chan"}
- };if {!$i} {set channels [string tolower [channels]]}
- foreach chan $channels {
-  if {[string match *+inactive* [channel info $chan]]} {continue}
-  if {![onchan $botnick $chan]} {
-   utimer [expr $mc_sc(joind)+2] "mc:sc:message [mc:sc:filt $nick] [mc:sc:filt $uhost] [mc:sc:filt $hand] {[mc:sc:filt $method]}"
+proc mc:sc:message {nick uhost hand method {channels {}}} {
+ global mc_sc botnick
+ if {[string tolower $nick] == [string tolower $botnick]} {return 0}
+ if {$channels == ""} {
+  if {[info exists mc_sc(ignore:$nick)]} {
+   if {![string match "*unset mc_sc(ignore:$nick)*" [utimers]]} {
+    utimer 5 "catch {unset mc_sc(ignore:[mc:sc:filt $nick])}"
+   };return 0
+  };set mc_sc(ignore:$nick) 1
+  utimer 5 "catch {unset mc_sc(ignore:[mc:sc:filt $nick])}"
+  if {[info exists mc_sc(joind:active)]} {
+   utimer [expr $mc_sc(joind)+2] "mc:sc:message [list $nick $uhost $hand $method]"
+   if {![string match "*unset mc_sc(joind:active)*" [utimers]]} {
+    utimer $mc_sc(joind) "unset mc_sc(joind:active)"
+   };return 0
+  }
+  foreach chan [string tolower [channels]] {
+   if {[onchan $nick $chan]} {set i 1;lappend channels $chan}
+  }
+  if {![info exists channels]} {
+   scan $from {%[^@]@%s} ident host ; set found ""
+   foreach chan [string tolower [channels]] {
+    append found " [mc:sc:inter:findchanuser *!*@$host $chan]"
+   }
+   if {$found != ""} {
+    foreach user $found {
+     utimer 5 "mc:sc:message [list $user [getchanhost $user] [nick2hand $user] $method]"
+    };return 0
+   } {set channels [string tolower [channels]]}
+  }
+ } elseif {![onchan $nick $channels]} {return 0}
+ foreach channel $channels {
+  if {([mc:sc:inter:chanflagison $channel inactive]) ||
+      (![mc:sc:inter:chanflagison $channel spamcheck]) ||
+      (([isop $nick $channel]) && ($mc_sc(exempt:op))) ||
+      (([isvoice $nick $channel]) && ($mc_sc(exempt:voice))) ||
+      (($mc_sc(exempt:flags) != "") && ([matchattr $hand $mc_sc(exempt:flags) $channel]))} {
    continue
   }
-  if {([string match "* -spamcheck *" " [channel info $chan] "]) ||
-      (([isop $nick $chan]) && ($mc_sc(exempt:op))) ||
-      (([isvoice $nick $chan]) && ($mc_sc(exempt:voice))) ||
-      (($mc_sc(exempt:flags) != "") &&
-      ([matchattr $hand $mc_sc(exempt:flags) $chan]))} {continue}
+  if {![onchan $botnick $channel]} {
+   utimer [expr $mc_sc(joind)+2] "mc:sc:message [list $nick $uhost $hand $method $channel]"
+   continue
+  }
   if {$mc_sc(warnings)} {
-   if {[info exists mc_sc(warn:$uhost:$chan)]} {
-    if {[set mc_sc(warn:$uhost:$chan) [expr $mc_sc(warn:$uhost:$chan)+1]] > $mc_sc(warnings)} {
-     mc:sc:punish [split $nick] [split $uhost] [split $hand] [split $chan] 0 "$method"
-    } {mc:sc:punish [split $nick] [split $uhost] [split $hand] [split $chan] 1 "$method"}
-   } else {
-    set mc_sc(warn:$uhost:$chan) 0
-    mc:sc:punish [split $nick] [split $uhost] [split $hand] [split $chan] 1 "$method"
-   }
-  } else {mc:sc:punish [split $nick] [split $uhost] [split $hand] [split $chan] 0 "$method"}
+   if {[info exists mc_sc(warn:$uhost:$channel)]} {
+    if {[set mc_sc(warn:$uhost:$channel) [expr $mc_sc(warn:$uhost:$channel)+1]] > $mc_sc(warnings)} {
+     set x 0
+    } else {set x 1}
+   } else {set mc_sc(warn:$uhost:$channel) 0 ; set x 1}
+  } else {set x 0}
+  mc:sc:punish $nick $uhost $hand $channel $x $method
  }
 }
 
 proc mc:sc:punish {nick uhost hand chan warn method} {
  global mc_sc botnick {botnet-nick}
- if {[lindex $method 0] == "dccsend"} {set filename [lindex $method 1];set method dccsend} {
-  set filename ""
- }
+ scan $method {%s %s} method filename ; if {$method != "dccsend"} {set filename ""}
+ set banmask [mc:sc:inter:masktype $nick!$uhost $mc_sc(bant)]
  if {![isop $botnick $chan]} {
   if {$mc_sc(relay)} {
-   putallbots "spamcheck [encrypt $mc_sc(relay:key) "$mc_sc(relay:key)+${botnet-nick}"] [split $nick] $uhost [split $hand] [split $chan] $warn $method"
+   putallbots "spamcheck [encrypt $mc_sc(relay:key) "$mc_sc(relay:key)+${botnet-nick}"] [list $nick $uhost $hand $chan $warn $method]"
   }
-  if {$mc_sc(ban:anyhow)} {
-   set ban [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]
+ }
+ if {(![isop $botnick $chan]) || (![onchan $nick $chan])} {
+  if {($mc_sc(ban:anyhow)) && ([string trim $mc_sc(exc:ban) @!] != "-1") &&
+      (![isban $banmask $chan]) && ([string trim $mc_sc(exc:ban) @!])} {
    set comment [mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]
    if {[string match *! $mc_sc(exc:ban)]} {
-    set time [lindex [split $mc_sc(exc:ban) !] 0]
-    set options "sticky"
-   } {
-    set time $mc_sc(exc:ban)
-    set options "none"
-   }
-   newban $ban ${botnet-nick} $comment [string trimleft $time @] $options
-  };return
+    set time [string trimright $mc_sc(exc:ban) !] ; set options "sticky"
+   } {set time $mc_sc(exc:ban) ; set options "none"}
+   newchanban $chan $banmask ${botnet-nick} $comment [string trimleft $time @] $options
+  };return 0
  }
  if {$warn} {
-  putlog "Spam Check, warning $nick!$uhost: [mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]"
-  if {$mc_sc(warn:msg) && ([mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"] != "")} {
-   putserv "PRIVMSG $nick :[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]"
-  }
-  if {[string index $mc_sc(warn:ban) 0] == "@"} {
-   set time [string range $mc_sc(warn:ban) 1 end]
-   set global 1
-  } else {set time $mc_sc(warn:ban);set global 0}
-  if {[lindex [split $time !] 0] > -1} {
-   if {![lindex [split $time !] 0]} {
-    if {(![onchan $nick $chan]) && ($mc_sc(glob_ban)) || $global} {
-     foreach chan [string tolower [channels]] {
-      if {[string match "* -spamcheck *" " [channel info $chan] "]} {continue}
-      putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-      set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-      if {[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"] != ""} {
-       foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]"}
-      } {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-     }
-    } else {
-     putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-     set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-     if {[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"] != ""} {
-      foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]"}
-     } {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-    }
-   } else {
-    if {(![onchan $nick $chan]) && ($mc_sc(glob_ban)) || $global} {
-     foreach chan [string tolower [channels]] {
-      if {[string match "* -spamcheck *" " [channel info $chan] "]} {continue}
-      putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-      if {[string index $time [expr [string length $time]-1]] == "!"} {
-       set opt "sticky"
-       set bantime [string range $time 0 [expr [string length $time]-2]]
-      } {
-       set opt "none"
-       set bantime $time
-      }
-      newchanban $chan [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] spamcheck [mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"] $bantime $opt
-      set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-      if {[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"] != ""} {
-       foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]"}
-      } {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-     }
-    } else {
-     putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-     if {[string index $time [expr [string length $time]-1]] == "!"} {
-      set opt "sticky"
-      set bantime [string range $time 0 [expr [string length $time]-2]]
-     } {
-      set opt "none"
-      set bantime $time
-     }
-     newchanban $chan [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] spamcheck [mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"] $bantime $opt
-     set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-     if {[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"] != ""} {
-      foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]"}
-     } else {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-    }
-   }
-  } else {
-   if {$mc_sc(warn:kick)} {
-    if {[onchan $nick $chan]} {
-     if {[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"] != ""} {
-      putserv "KICK $chan $nick :[mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]"
-     } {putserv "KICK $chan $nick"}
-    }
-   }
+  set comment [mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]
+  putlog "Spam Check, warning $nick!$uhost ($chan): $comment"
+  if {($mc_sc(warn:msg)) && ($comment != "")} { putserv "PRIVMSG $nick :$comment" }
+  set global [string match @* $mc_sc(warn:ban)]
+  if {[string match *! $mc_sc(warn:ban)]} {set opt "sticky"} {set opt "none"}
+  set time [string trimleft $mc_sc(warn:ban) @!]
+  if {$mc_sc(warn:kick)} {
+   if {$comment != ""} {set x " :$comment"} {set x ""};putserv "KICK $chan $nick$x"
   }
  } else {
-  putlog "Spam Check, exceeded warnings for $nick!$uhost: [mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]"
-  if {[string index $mc_sc(exc:ban) 0] == "@"} {
-   set time [string range $mc_sc(exc:ban) 1 end]
-   set global 1
-  } else {set time $mc_sc(exc:ban);set global 0}
-  if {[lindex [split $time !] 0] > -1} {
-   if {![lindex [split $time !] 0]} {
-    if {(![onchan $nick $chan]) && ($mc_sc(glob_ban)) || $global} {
-     foreach chan [string tolower [channels]] {
-      if {[string match "* -spamcheck *" " [channel info $chan] "]} {continue}
-      putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-      set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-      if {[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"] != ""} {
-       foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]"}
-      } {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-     }
-    } {
-     putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-     set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-     if {[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"] != ""} {
-      foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]"}
-     } {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-    }
-   } {
-    if {(![onchan $nick $chan]) && ($mc_sc(glob_ban)) || $global} {
-     foreach chan [string tolower [channels]] {
-      if {[string match "* -spamcheck *" " [channel info $chan] "]} {continue}
-      putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-      if {[string index $time [expr [string length $time]-1]] == "!"} {
-       set opt "sticky"
-       set bantime [string range $time 0 [expr [string length $time]-2]]
-      } {
-       set opt "none"
-       set bantime $time
-      }
-      newchanban $chan [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] spamcheck [mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"] $bantime $opt
-      set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-      if {[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"] != ""} {
-       foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]"}
-      } {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-     }
-    } {
-     putserv "MODE $chan +b [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)]"
-     if {[string index $time [expr [string length $time]-1]] == "!"} {
-      set opt "sticky"
-      set bantime [string range $time 0 [expr [string length $time]-2]]
-     } {
-      set opt "none"
-      set bantime $time
-     }
-     newchanban $chan [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] spamcheck [mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"] $bantime $opt
-     set spamnicks [mc:sc:inter:findchanuser [mc:sc:inter:masktype [join [split $nick!$uhost]] $mc_sc(bant)] $chan]
-     if {[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"] != ""} {
-      foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer :[mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]"}
-     } {foreach spammer [split $spamnicks] {putserv "KICK $chan $spammer"}}
-    }
-   }
+  set comment [mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]
+  putlog "Spam Check, exceeded warnings for $nick!$uhost ($chan): $comment"
+  set global [string match @* $mc_sc(exec:ban)]
+  if {[string match *! $mc_sc(exec:ban)]} {set opt "sticky"} {set opt "none"}
+  set time [string trimleft $mc_sc(exec:ban) @!]
+  if {$comment != ""} {set x " :$comment"} {set x ""};putserv "KICK $chan $nick$x"
+ }
+ if {$time >= "0"} {
+  if {$global} {set channels [string tolower [channels]]} else {
+   set channels [string tolower $chan]
+  }
+  foreach channel $channels {
+   if {(![mc:sc:inter:chanflagison $channel spamcheck]) ||
+       ([mc:sc:inter:extischanban $banmask $channel])} {continue}
+   putserv "MODE $channel +b $banmask"
+  }
+ }
+ if {$time >= "1"} {
+  foreach channel $channels {
+   if {(![mc:sc:inter:chanflagison $channel spamcheck]) ||
+       ([isban $banmask $channel])} {continue}
+   newchanban $channel $banmask ${botnet-nick} $comment $time $opt
   }
  }
 }
 
 bind bot - spamcheck mc:sc:bot:relay
-proc mc:sc:bot:relay {from command args} {
+proc mc:sc:bot:relay {from command arg} {
  global mc_sc botnick
- set args [join $args]
- if {!$mc_sc(relay)} {return}
- if {[lindex $args 0] != [encrypt $mc_sc(relay:key) "$mc_sc(relay:key)+$from"]} {return}
- set nick [lindex $args 1]
- set uhost [lindex $args 2]
- set hand [lindex $args 3]
- set chan [lindex $args 4]
- set warn [lindex $args 5]
- set method [lindex $args 6]
- if {![validchan $chan]} {return}
- if {[info exists mc_sc(relayblock:$uhost:$chan)]} {
-  if {![string match "*unset mc_sc(relayblock:$uhost:$chan)*" [utimers]]} {
-   utimer 10 "unset mc_sc(relayblock:[mc:sc:filt $uhost:$chan])"
-  };return
- }
- set mc_sc(relayblock:$uhost:$chan) 1
- utimer 10 "unset mc_sc(relayblock:[mc:sc:filt $uhost:$chan])"
- if {[info exists mc_sc(relayblock:$nick)]} {
-  if {![string match "*unset mc_sc(relayblock:$nick)*" [utimers]]} {
-   utimer 10 "unset mc_sc(relayblock:[mc:sc:filt $nick])"
+ set nick [lindex $arg 1] ; set uhost [lindex $arg 2] ; set hand [lindex $arg 3]
+ set chan [lindex $arg 4] ; set warn [lindex $arg 5] ; set method [lindex $arg 6]
+ if {([lindex $arg 0] != [encrypt $mc_sc(relay:key) "$mc_sc(relay:key)+$from"]) ||
+     (!$mc_sc(relay)) || (![validchan $chan])} {return 0}
+ if {[info exists mc_sc(relayblock:$nick:$chan)]} {
+  if {![string match "*unset mc_sc(relayblock:$nick:$chan)*" [utimers]]} {
+   utimer 10 "unset mc_sc(relayblock:[mc:sc:filt $nick:$chan])"
+  };return 0
+ };set mc_sc(relayblock:$nick:$chan) 1
+ utimer 10 "unset mc_sc(relayblock:[mc:sc:filt $nick:$chan])"
+ putlog "Spam Check:  Bot relay from $from regarding $nick @ $chan."
+ mc:sc:punish $nick $uhost $hand $chan $warn $method
+}
+
+bind evnt - prerestart mc:sc:evnt:prestart
+proc mc:sc:evnt:prestart {type} {
+ set i 0
+ foreach timer [utimers] {
+  if {[string match "*channel set * -inactive*" $timer]} {
+   catch {channel set [lindex [lindex $timer 1] 2] -inactive]}
+   set i 1
   }
- } else {
-  set mc_sc(relayblock:$nick) 1
-  utimer 10 "unset mc_sc(relayblock:[mc:sc:filt $nick])"
-  putlog "Spam Check:  Bot relay from $from regarding $nick."
- };mc:sc:punish $nick $uhost $hand $chan $warn $method
+ };if {$i} {savechannels}
 }
 
 ### Internal use Procs
 
 proc mc:sc:inter:masktype {uhost type} {
- if {![string match "*!*@*.*" $uhost]} {
-  set nick [lindex [split $uhost "!"] 0] ; set uhost "$nick![getchanhost $nick]"
-  if {$uhost == "$nick!"} {set type "return_nothing"}
+ set ident_max-length 9
+ set host_max-length 63
+ scan $uhost {%[^!]!%[^@]@%s} nick ident host
+ set maskhost 1
+ if {[regexp -- {^1[0-9]$} $type]} {
+  if {!([regexp -- {^([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)$} $host temp a b c d] && ($a > 0 && $a < 255 && $b < 255 && $c < 255 && $d < 255))} {
+   regsub -all {[0-9]} $host "?" host
+   set maskhost 0
+  };set type [string index $type 1]
  }
- switch -exact $type {
-  0 {set ban "*[string range $uhost [string first ! $uhost] end]"}
-  1 {set ban "*!*[string trimleft [string range $uhost [expr [string first ! $uhost]+1] end] "~"]"}
-  2 {set ban "*!*[string range $uhost [string first @ $uhost] end]"}
-  3 {
-   set ident [string range $uhost [expr [string first ! $uhost]+1] [expr [string last @ $uhost]-1]]
-   set ban "*!*[string trimleft $ident "~"][string range [maskhost $uhost] [string first @ [maskhost $uhost]] end]"
-  }
-  4 {set ban "*!*[string range [maskhost $uhost] [string last "@" [maskhost $uhost]] end]"}
-  5 {set ban $uhost}
-  6 {
-   set nick [string range $uhost 0 [expr [string first "!" $uhost]-1]]
-   set ident [string range $uhost [expr [string first "!" $uhost]+1] [expr [string last "@" $uhost]-1]]
-   set ban "$nick!*[string trimleft $ident "~"][string range $uhost [string last "@" $uhost] end]"
-  }
-  7 {
-   set nick [string range $uhost 0 [expr [string first "!" $uhost]-1]]
-   set ban "$nick!*[string range $uhost [string last "@" $uhost] end]"
-  }
-  8 {
-   set nick [string range $uhost 0 [expr [string first "!" $uhost]-1]]
-   set ident [string range $uhost [expr [string first "!" $uhost]+1] [expr [string last "@" $uhost]-1]]
-   set ban "$nick!*[string trimleft $ident "~"][string range [maskhost $uhost] [string last "@" [maskhost $uhost]] end]"
-  }
-  9 {
-   set nick [string range $uhost 0 [expr [string first "!" $uhost]-1]]
-   set ban "$nick!*[string range [maskhost $uhost] [string last "@" [maskhost $uhost]] end]"
-  }
-  10 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {
-    set host [mc:sc:inter:replace $host "1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 0 ?"]
-    set ident [string range $uhost [expr [string first "!" $uhost]+1] [expr [string last "@" $uhost]-1]]
-    set ban "*!$ident$host"
-   } {set ban [mc:sc:inter:masktype $uhost 0]}
-  }
-  11 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {
-    set host [mc:sc:inter:replace $host "1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 0 ?"]
-    set ident [string range $uhost [expr [string first "!" $uhost]+1] [expr [string last "@" $uhost]-1]]
-    set ban "*!*[string trimleft $ident "~"]$host"
-   } {set ban [mc:sc:inter:masktype $uhost 1]}
-  }
-  12 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {
-    set host [mc:sc:inter:replace $host "1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 0 ?"]
-    set ban "*!*$host"
-   } {set ban [mc:sc:inter:masktype $uhost 2]}
-  }
-  13 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {set ban [mc:sc:inter:masktype $uhost 11]} {set ban [mc:sc:inter:masktype $uhost 3]}
-  }
-  14 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {set ban [mc:sc:inter:masktype $uhost 12]} {set ban [mc:sc:inter:masktype $uhost 4]}
-  }
-  15 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {
-    set host [mc:sc:inter:replace $host "1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 0 ?"]
-    set rest [string range $uhost 0 [expr [string last "@" $uhost]-1]]
-    set ban $rest$host
-   } {set ban [mc:sc:inter:masktype $uhost 5]}
-  }
-  16 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {
-    set host [mc:sc:inter:replace $host "1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 0 ?"]
-    set rest "[string range $uhost 0 [expr [string first "!" $uhost]-1]]!*[string trimleft [string range $uhost [expr [string first "!" $uhost]+1] [expr [string last "@" $uhost]-1]] "~"]"
-    set ban $rest$host
-   } {set ban [mc:sc:inter:masktype $uhost 6]}
-  }
-  17 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {
-    set host [mc:sc:inter:replace $host "1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 0 ?"]
-    set rest "[string range $uhost 0 [expr [string first "!" $uhost]-1]]!*"
-    set ban $rest$host 
-   } {set ban [mc:sc:inter:masktype $uhost 7]}
-  }
-  18 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {set ban [mc:sc:inter:masktype $uhost 16]} {set ban [mc:sc:inter:masktype $uhost 8]}
-  }
-  19 {
-   set host [string range $uhost [string last "@" $uhost] end]
-   if {[mc:sc:inter:findip [string range $host 1 end]] == "0"} {set ban [mc:sc:inter:masktype $uhost 17]} {set ban [mc:sc:inter:masktype $uhost 9]}
-  }
-  return_nothing {set ban ""}
-  default {set ban "*!*[string range $uhost [string first "@" $uhost] end]"}
+ if {[regexp -- {^[0-4]$} $type]} {set nick "*"}
+ if {[regexp -- {^[2479]$} $type]} {set ident "*"}
+ if {[regexp -- {^[1368]$} $type]} {set ident "*[string trimleft $ident ~]"}
+ if {[regexp -- {^[3489]$} $type]} {if {$maskhost} {scan [maskhost $host] {%[^@]@%s} temp host}}
+ if {[string length $ident] > ${ident_max-length}} {
+  set ident "*[string range $ident [expr [string length $ident]-${ident_max-length}] end]"
  }
- set _nick [lindex [split $ban !] 0]
- set _ident [string range $ban [expr [string first ! $ban]+1] [expr [string last @ $ban]-1]]
- set _host [string range $ban [expr [string last @ $ban]+1] end]
- if {$_ident != [set temp [string range $_ident [expr [string length $_ident]-9] end]]} {
-  set _ident *[string trimleft $temp *]
- }
- if {$_host != [set temp [string range $_host [expr [string length $_host]-63] end]]} {
-  set _host *[string trimleft $temp *]
- } ; return $_nick!$_ident@$_host
-}
-
-proc mc:sc:inter:findip {args} {
- catch {unset mc_found_ip}
- if {![string match *.*.*.* $args]} {return 0}
- foreach arg $args {
-  if {[string match *.*.*.* $arg]} {
-   set mc_testa [split $arg "."] ; set i 0
-   while {[llength $mc_testa] != $i} {
-    set mc_test [lrange $mc_testa $i end]
-    if {[string length [lindex $mc_test 1]]<4 && [string length [lindex $mc_test 2]]<4} {
-     if {[lindex $mc_test 1] < 256 && [lindex $mc_test 2] < 256 && [lindex $mc_test 1] >= 0 && [lindex $mc_test 2] >= 0} {
-      set first "abcdefghi"
-      if {[string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 1]] <= 9 && [string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 1]] >= 0} {
-       set first [string range [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 1] end]
-       if {[string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 2]] <= 9 && [string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 2]] >= 0} {
-        set first [string range [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 2] end]
-        if {[string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 3]] <= 9 && [string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 3]] >= 0} {
-         set first [string range [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 3] end]
-        }
-       }
-      }
-      set second [lindex $mc_test 1] ; set third [lindex $mc_test 2] ; set fourth "abcdefghi"
-      if {[string index [lindex $mc_test 3] 0] <= 9 && [string index [lindex $mc_test 3] 0] >= 0} {
-       set fourth [string index [lindex $mc_test 3] 0]
-       if {[string index [lindex $mc_test 3] 1] <= 9 && [string index [lindex $mc_test 3] 1] >= 0} {
-        set fourth $fourth[string index [lindex $mc_test 3] 1]
-        if {[string index [lindex $mc_test 3] 2] <= 9 && [string index [lindex $mc_test 3] 2] >= 0} {
-         set fourth $fourth[string index [lindex $mc_test 3] 2]
-        }
-       }
-      }
-      if {($first < 256) && ($second < 256) && ($third < 256) &&
-          ($fourth < 256) && ($first > 0) && ($second > 0) &&
-          ($third > 0) && ($fourth > 0) && ([string index $first 0] > 0) &&
-          ([string index $second 0] > 0) && ([string index $third 0] > 0) &&
-          ([string index $fourth 0] > 0)} {
-       if {[info exists mc_found_ip]} {
-        set mc_found_ip "$mc_found_ip $first.$second.$third.$fourth"
-       } {set mc_found_ip $first.$second.$third.$fourth}
-      }
-     }
-    } ; incr i +1
-   }
-  }
- } ; if {[info exists mc_found_ip]} {return $mc_found_ip} {return 0}
+ if {[string length $host] > ${host_max-length}} {
+  set host "*[string range $host [expr [string length $host]-${host_max-length}] end]"
+ }; return [format "%s!%s@%s" $nick $ident $host]
 }
 
 proc mc:sc:inter:replace {string subs} {
- if {[llength $subs] == "1"} {set subs [lindex $subs 0]}
  for {set i 0} {[lindex $subs $i] != ""} {incr i 2} {
   regsub -all -- [lindex $subs $i] $string [lindex $subs [expr $i+1]] string
  } ; return $string
 }
 
 proc mc:sc:inter:findchanuser {hostmask channel} {
- if {![validchan $channel]} {return -code error "no such channel record"} ; set buffer ""
+ if {![validchan $channel]} {return -code error "no such channel record"}
+ set buffer "" ; set hostmask [string tolower $hostmask]
  foreach user [chanlist $channel] {
-  if {[string match $hostmask "$user![getchanhost $user $channel]"]} {set buffer "$buffer $user"}
- } ; return [join [split $buffer] " "]
+  if {[string match $hostmask [string tolower $user![getchanhost $user $channel]]]} {
+   lappend buffer $user
+  }
+ };return $buffer
+}
+
+proc mc:sc:inter:chanflagison {chan flag} {
+ foreach info [string tolower [channel info $chan]] {
+  if {[string range $info 1 end] != [string tolower $flag]} {continue}
+  if {[string index $info 0] == "-"} {
+   return 0
+  } elseif {[string index $info 0] == "+"} {return 1} else {return 0}
+ };return 0
+}
+
+proc mc:sc:inter:extischanban {banmask channel} {
+ foreach lban [chanbans $channel] {
+  if {[string match [lindex $lban 0] $banmask]} {return 1}
+ };return 0
 }
 
 proc mc:sc:inter:strip:color {ar} {
- set argument ""
- if {![string match ** $ar]} {return $ar} ; set i -1 ; set length [string length $ar]
- while {$i < $length} {
-  if {[string index $ar $i] == ""} {
-   set wind 1 ; set pos [expr $i+1]
-   while {$wind < 3} {
-    if {[string index $ar $pos] <= 9 && [string index $ar $pos] >= 0} {
-     incr wind 1 ; incr pos 1} {set wind 3
-    }
-   }
-   if {[string index $ar $pos] == "," && [string index $ar [expr $pos + 1]] <= 9 &&
-       [string index $ar [expr $pos + 1]] >= 0} {
-    set wind 1 ; incr pos 1
-    while {$wind < 3} {
-     if {[string index $ar $pos] <= 9 && [string index $ar $pos] >= 0} {
-      incr wind 1 ; incr pos 1} {set wind 3
-     }
-    }
-   }
-   if {$i == 0} { 
-    set ar [string range $ar $pos end] 
-    set length [string length $ar] 
-   } { 
-    set ar "[string range $ar 0 [expr $i - 1]][string range $ar $pos end]" 
-    set length [string length $ar] 
-   }
-   set argument "$argument[string index $ar $i]"
-  } {incr i 1}
- }
- set argument $ar
- return $argument
+ regsub -all -- {\003([0-9][0-9]?(,[0-9][0-9]?)?)?} $ar "" ar ; return $ar
 }
-
-proc mc:sc:inter:strip:bold {ar} {
- set argument ""
- if {[string match ** $ar]} {
-  set i 0
-  while {$i <= [string length $ar]} { 
-   if {![string match  [string index $ar $i]]} { 
-    set argument "$argument[string index $ar $i]"
-   } ; incr i 1
-  }
- } {set argument $ar}
- return $argument
-}
-
-proc mc:sc:inter:strip:uline {ar} {
- set argument ""
- if {[string match ** $ar]} {
-  set i 0
-  while {$i <= [string length $ar]} { 
-   if {![string match  [string index $ar $i]]} { 
-    set argument "$argument[string index $ar $i]"
-   } ; incr i 1
-  }
- } {set argument $ar}
- return $argument
-}
-
-proc mc:sc:inter:strip:reverse {ar} {
- set argument ""
- if {[string match ** $ar]} {
-  set i 0
-  while {$i <= [string length $ar]} { 
-   if {![string match  [string index $ar $i]]} { 
-    set argument "$argument[string index $ar $i]"
-   } ; incr i 1
-  }
- } {set argument $ar}
- return $argument
-}
-
+proc mc:sc:inter:strip:bold {ar} {regsub -all -- "\002" $ar "" ar; return $ar}
+proc mc:sc:inter:strip:uline {ar} {regsub -all -- "\037" $ar "" ar; return $ar}
+proc mc:sc:inter:strip:reverse {ar} {regsub -all -- "\026" $ar "" ar; return $ar}
 proc mc:sc:inter:strip:all {ar} {
  return [mc:sc:inter:strip:reverse [mc:sc:inter:strip:uline [mc:sc:inter:strip:bold [mc:sc:inter:strip:color $ar]]]]
 }
 
-## sindex procedures (by MC_8 & guppy)
-proc mc:sc:slength {str} {return [llength $str]}
-proc mc:sc:sindex {str index} {return [lindex [split $str] $index]}
-proc mc:sc:srange {str s e} {return [lrange [split $str] $s $e]}
+#proc mc:sc:filt {data} {
+# return [join [split [join [split [join [split [join [split [join [split [join [split $data \\] \\\\] \[] \\\[] \]] \\\]] \}] \\\}] \{] \\\{] \"] \\\"]
+#}
 proc mc:sc:filt {data} {
- return [join [split [join [split [join [split [join [split [join [split [join [split $data \\] \\\\] \[] \\\[] \]] \\\]] \}] \\\}] \{] \\\{] \"] \\\"]
+  regsub -all -- \\\\ $data \\\\\\\\ data ; regsub -all -- \\\[ $data \\\\\[ data ; regsub -all -- \\\] $data \\\\\] data
+  regsub -all -- \\\} $data \\\\\} data ; regsub -all -- \\\{ $data \\\\\{ data ; regsub -all -- \\\" $data \\\\\" data ; return $data
 }
-proc mc:sc:unfilt {data} {
- regsub -all -- \\\\\\\[ $data \[ data;regsub -all -- \\\\\\\] $data \] data;regsub -all -- \\\\\\\} $data \} data
- regsub -all -- \\\\\\\{ $data \{ data;regsub -all -- \\\\\\\" $data \" data;regsub -all -- \\\\\\\\ $data \\ data;return $data
-}
-## sindex end
 
 if {$mc_sc(svs:enabled)} {
  if {($mc_sc(svs:check) > "23") || ($mc_sc(svs:check) < "0")} {set mc_sc(svs:check) 00}
@@ -1043,15 +831,15 @@ proc mc:sc:svs:interface {idx args} {
    if {[lindex $args 0] != [lindex $mc_sc(svs:script) 0]} {return 0}
    putdcc $idx q
    if {[lindex $args 1] > [lindex $mc_sc(svs:script) 1]} {
-    set note [mc:sc:svs:replace [lindex $args 7] "%0 {[lindex $args 0]} %1 {[lindex $args 1]} %2 {[lindex $args 2]}"]
-    set note [mc:sc:svs:replace $note "%3 {[lindex $args 3]} %4 {[lindex $args 4]} %5 {[lindex $args 5]}"]
-    set note [mc:sc:svs:replace $note "%6 {[lindex $args 6]} %8 {[lindex $args 8]} %version {$mc_sc(version)}"]
-    set note [mc:sc:svs:replace $note "%9 {[lindex $args 9]} %10 {[lindex $args 10]} %11 {[lindex $args 11]}"]
-    set note [mc:sc:svs:replace $note "%12 {[lindex $args 12]} %13 {[lindex $args 13]} %14 {[lindex $args 14]}"]
-    set note [mc:sc:svs:replace $note "%15 {[lindex $args 15]} %16 {[lindex $args 16]} %17 {[lindex $args 17]}"]
-    set note [mc:sc:svs:replace $note "%18 {[lindex $args 18]} %19 {[lindex $args 19]} %20 {[lindex $args 20]}"]
+    set note [mc:sc:inter:replace [lindex $args 7] "%0 {[lindex $args 0]} %1 {[lindex $args 1]} %2 {[lindex $args 2]}"]
+    set note [mc:sc:inter:replace $note "%3 {[lindex $args 3]} %4 {[lindex $args 4]} %5 {[lindex $args 5]}"]
+    set note [mc:sc:inter:replace $note "%6 {[lindex $args 6]} %8 {[lindex $args 8]} %version {$mc_sc(version)}"]
+    set note [mc:sc:inter:replace $note "%9 {[lindex $args 9]} %10 {[lindex $args 10]} %11 {[lindex $args 11]}"]
+    set note [mc:sc:inter:replace $note "%12 {[lindex $args 12]} %13 {[lindex $args 13]} %14 {[lindex $args 14]}"]
+    set note [mc:sc:inter:replace $note "%15 {[lindex $args 15]} %16 {[lindex $args 16]} %17 {[lindex $args 17]}"]
+    set note [mc:sc:inter:replace $note "%18 {[lindex $args 18]} %19 {[lindex $args 19]} %20 {[lindex $args 20]}"]
     foreach notify [join [split $mc_sc(svs:notify) ",;"]] {
-     set outnote [mc:sc:svs:replace $note "%nick {$notify}"]
+     set outnote [mc:sc:inter:replace $note "%nick {$notify}"]
      if {[string match "*$outnote*" "[notes $notify -[notes $notify]]"]} {
       set cont 0
       foreach unote [notes $notify -[notes $notify]] {
@@ -1059,19 +847,16 @@ proc mc:sc:svs:interface {idx args} {
       };if {$cont} {continue}
      }
      switch -- [sendnote SVS $notify $outnote] {
-      0 {putlog "MC SVS for [lindex $mc_sc(svs:script) 0] had some errors updating $notify on current version of script; unknown reason!"}
-      3 {putlog "MC SVS for [lindex $mc_sc(svs:script) 0] had some errors updating $notify on current version of script; notebox too full!"}
+      0 {
+       if {![validuser $notify]} {set x "invalid user"} else {set x "unknown reason"}
+       putlog "MC SVS for [lindex $mc_bw(svs:script) 0] had some errors updating $notify on current version of script; $x"
+      }
+      3 {putlog "MC SVS for [lindex $mc_bw(svs:script) 0] had some errors updating $notify on current version of script; notebox too full!"}
      }
     }
    }
   }
  };return 0
-}
-proc mc:sc:svs:replace {string subs} {
- if {[llength $subs] == "1"} {set subs [lindex $subs 0]}
- for {set i 0} {[lindex $subs $i] != ""} {incr i 2} {
-  regsub -all -- [lindex $subs $i] $string [lindex $subs [expr $i+1]] string
- } ; return $string
 }
 
 putlog "Spam Check $mc_sc(version) by MC_8 loaded."
