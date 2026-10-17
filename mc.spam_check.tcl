@@ -1,9 +1,6 @@
 ##
-# Spam Check v2.2 by MC_8 - Carl M. Gregory <gregory@worldinter.net>
-#  This script will only work on eggdrop 1.5+ series.
-#
-# If you have any questions/comments/idea's, please email me!
-# ( Include the script name and version in the title, if you do email me. )
+# Spam Check v2.2.1 by MC_8 - Carl M. Gregory <mc8@purehype.net>
+#  This script will only work on eggdrop 1.5.5 or greater.
 #
 # My SVS Website - http://mc.purehype.net:81/
 ##
@@ -27,8 +24,23 @@
 ##
 
 ##
-# History
+# History  ( <Fixed by> - [Found by] - <Information> ) 
 ##
+# v2.2.1 (11.19.01)
+#  MC_8 - IngentinG - Fixed 'TCL error [mc:sc:bot:relay]: can't read 
+#                     "filename": no such variable'.
+#  MC_8 -           - Added a new error handling idea.
+#  MC_8 - Erik      - TCL error [mc:sc:dcc:message]: variable is not assigned
+#                     by any conversion specifiers
+#  MC_8 - Erik      - Fixed 'TCL error [mc:sc:dcc:command:spamcheck]: can't 
+#                     read "mc_sc(script)": no such variable'.  Error in DCC
+#                     and MSG command 'spamcheck'.
+#  MC_8 - Erik      - Fixed 'TCL error [mc:sc:msg:command:spamcheck]: can't
+#                     read "pos_mod": no such variable'.
+#  MC_8 -           - Upgraded from SVS v1.3 to v2.0.
+#  MC_8 - Plexus    - Fixed 'TCL error [mc:sc:msgm:message]: can't read 
+#                     "mc_sc(exec:ban)": no such element in array'.
+#
 # v2.2 (10.30.01)
 #  MC_8 - Rewrote explination of ban masking types.
 #  MC_8 - Rewrote the ban masking proc again, much smaller now.
@@ -219,7 +231,7 @@
 # What command words do you want to ignore?  The command word would be the first
 # word the user would say, like "seen" or "help" or "op".
 # List all ignored words, seperated by spaces.
-set mc_sc(ign:wrds) "addhost info who ident help voice whois pass op invite go key die jump memory save rehash reset status dent"
+set mc_sc(ign:wrds) "addhost info who ident help voice whois pass op invite go key die jump memory save rehash reset status dent notes"
 
 # What word strings do you want to listen for?  Seperate each string with a new
 # line.  Wildcards are accepted.  If you want it to listen to everything (like
@@ -382,7 +394,8 @@ set mc_sc(relay:key) "spamcheck"
 # setting.
 set mc_sc(ban:anyhow) 1
 
-## MC SVS (Script Version Server) v1.3 ##
+
+## MC SVS (Script Version Service) v2.0 ##
 # Do you want the bot to connection to MC_8's SVS to see if there are newer versions
 # of this script avilable?  It will only tell you -- It's up to you to get the newest
 # version (I decided not to auto update the code, there may be new features in the
@@ -393,8 +406,8 @@ set mc_sc(svs:enabled) 1
 # Once a day the script will check with the SVS -- this specifies when
 # that should happen.  The setting should be the hour (military).
 # examples:
-#  set mc_sc(svs:check) 0  ;#This is at Midnight
-#  set mc_sc(svs:check) 5  ;#This is at 5am
+#  set mc_sc(svs:check) 0   ;#This is at Midnight
+#  set mc_sc(svs:check) 5   ;#This is at 5am
 #  set mc_sc(svs:check) 13  ;#This is at 1pm
 #  set mc_sc(svs:check) 23  ;#This is at 11pm
 set mc_sc(svs:check) 3
@@ -422,19 +435,53 @@ set mc_sc(svs:stableonly) 0
 # Coding below, do not proceed unless you are a programmer.
 ##
 
-set mc_sc(version) v2.2
-set mc_sc(svs:script) "spamcheck 002002000000"
-set mc_sc(svs:server) "mc.purehype.net 8085"
+set mc_sc(script)      "Spam Check"
+set mc_sc(version)     "v2.2.1"
+set mc_sc(svs:script)  "spamcheck"
+set mc_sc(svs:version) "002002001000"
+set mc_sc(svs:server)  "mc.purehype.net"
+set mc_sc(svs:port)    "81"
+set mc_sc(svs:get)     "/"
+set mc_sc(svs:query)   "svs=$mc_sc(svs:script)&version=$mc_sc(svs:version)"
 
-if {$numversion < "1050000"} {
- putlog "Spam Check $mc_sc(version) by MC_8 is for eggdrop 1.5+ series only."
- putlog "Spam Check $mc_sc(version) will not work with eggdrop $version."
- putlog "Spam Check $mc_sc(version) not loaded."
+if {$numversion < "1050500"} {
+ putlog "$mc_sc(script) $mc_sc(version) by MC_8 will only work on eggdrop 1.5.5 or greater."
+ putlog "$mc_sc(script) $mc_sc(version)  will not work with eggdrop $version."
+ putlog "$mc_sc(script) $mc_sc(version)  not loaded."
  return 1
 }
+
+setudef flag spamcycle ; setudef flag spamcheck
+
+proc mc:sc:error {bindproc error {arg ""}} {
+ global mc_sc version lastbind
+ putlog "Error in script $mc_sc(script) $mc_sc(version)."
+ putlog "       Last bind: $lastbind"
+ putlog "       Procedure: $bindproc"
+ putlog "            Args: $arg"
+ putlog " Eggdrop version: $version"
+ putlog "     TCL version: [info tclversion]"
+ putlog "*** Please email this bug information to MC_8, his latest"
+ putlog "*** email address should be on http://mc.purehype.net:81/"
+ putlog "*** Please include the next line in the email as well."
+ error $error
+}
+
+proc mc:sc:errchk {command arg} {
+ if {[catch {eval $command $arg} return]} {
+  mc:sc:error $command $return $arg; return 0
+ }; return $return
+}
+
+proc mc:sc:inter:chanflagison {chan flag} {
+ if {[catch {mc:sc:inter:chanflagison_ $chan $flag} return]} {
+  mc:sc:error mc:sc:inter:chanflagison_ $return [list $chan $flag]
+  return 0
+ }; return $return
+}
+
 if {![string match *mc:sc:cycle* [timers]]} {
- set min [lindex [split $mc_sc(sc:cyclerate) :] 0]
- set max [lindex [split $mc_sc(sc:cyclerate) :] 1]
+ scan $mc_sc(sc:cyclerate) {%[^:]:%s} min max
  if {$min >= $max} {set cycletime $max} {
   set cycletime [rand [expr $max+1]]
   while {$cycletime < $min} {set cycletime [rand [expr $max+1]]}
@@ -442,21 +489,31 @@ if {![string match *mc:sc:cycle* [timers]]} {
 }
 if {[info exists mc_sc(joind:active)]} {unset mc_sc(joind:active)}
 set mc_sc(ign:wrds) [string tolower $mc_sc(ign:wrds)]
-setudef flag spamcycle ; setudef flag spamcheck
 
 bind dcc m| spamcheck mc:sc:dcc:command:spamcheck
-proc mc:sc:dcc:command:spamcheck {hand idx args} {
- mc:sc:cycle ; putdcc $idx "Spam Check is cycling channels."
+proc mc:sc:dcc:command:spamcheck {hand idx arg} {
+ return [mc:sc:errchk mc:sc:dcc:command:spamcheck_ [list $hand $idx $arg]]
+}
+proc mc:sc:dcc:command:spamcheck_ {hand idx arg} {
+ global mc_sc
+ mc:sc:cycle ; putdcc $idx "$mc_sc(script) is cycling channels."
  return 1
 }
 
 bind msg m| spamcheck mc:sc:msg:command:spamcheck
-proc mc:sc:msg:command:spamcheck {nick uhost hand args} {
- mc:sc:cycle ; putserv "PRIVMSG $nick :Spam Check is cycling channels."
+proc mc:sc:msg:command:spamcheck {nick uhost hand arg} {
+ return [mc:sc:errchk mc:sc:msg:command:spamcheck_ [list $nick $uhost $hand $arg]]
+}
+proc mc:sc:msg:command:spamcheck_ {nick uhost hand arg} {
+ global mc_sc
+ mc:sc:cycle ; putserv "PRIVMSG $nick :$mc_sc(script) is cycling channels."
  return 1
 }
 
 proc mc:sc:cycle {} {
+ return [mc:sc:errchk mc:sc:cycle_ ""]
+}
+proc mc:sc:cycle_ {} {
  global mc_sc numversion botnick
  foreach chan [string tolower [channels]] {
   if {![mc:sc:inter:chanflagison $chan spamcycle]} {continue}
@@ -464,30 +521,30 @@ proc mc:sc:cycle {} {
    set onlyop 1
    foreach user [string tolower [chanlist $chan]] {
     if {($user != [string tolower $botnick]) && [isop $user $chan]} {set onlyop 0 ; break}
-   } ; if {$onlyop} {putlog "Spam Check: Cannot cycle $chan, I am the only op.";continue}
+   } ; if {$onlyop} {putlog "$mc_sc(script): Cannot cycle $chan, I am the only op.";continue}
   }
   set channel_mode [lindex [getchanmode $chan] 0]
   set pos_chan_mode "" ; set neg_chan_mode ""
   regexp -- {\+([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $channel_mode temp pos_chan_mode
   regexp -- {\-([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $channel_mode temp neg_chan_mode
-  foreach nocymod $mc_sc(nocycle:mode) {  
+  foreach nocymode $mc_sc(nocycle:mode) {  
    set pos_mode "" ; set neg_mode ""
-   regexp -- {\+([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $nocymod temp pos_mode
-   regexp -- {\-([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $nocymod temp neg_mode
+   regexp -- {\+([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $nocymode temp pos_mode
+   regexp -- {\-([a-zA-Z0-9]*)[^a-zA-Z0-9]?} $nocymode temp neg_mode
    set a 1
-   foreach mode [split $pos_mod ""] {
-    if {![string match *$mode* $pos_chan_mod]} {set a 0;break}
+   foreach mode [split $pos_mode ""] {
+    if {![string match *$mode* $pos_chan_mode]} {set a 0;break}
    }
    set b 1
-   foreach mode [split $neg_mod ""] {
-    if {![string match *$mode* $neg_chan_mod]} {set b 0;break}
+   foreach mode [split $neg_mode ""] {
+    if {![string match *$mode* $neg_chan_mode]} {set b 0;break}
    }
    set c 1
-   foreach mode [split $neg_mod ""] {
-    if {[string match *$mode* $pos_chan_mod]} {set c 0;break}
+   foreach mode [split $neg_mode ""] {
+    if {[string match *$mode* $pos_chan_mode]} {set c 0;break}
    }
    if {[expr $a && $b && $c]} {
-    putlog "Spam Check: Cannot cycle $chan, channel mode is: $channel_mode / nocycle mode is $nocymod"
+    putlog "$mc_sc(script): Cannot cycle $chan, channel mode is: $channel_mode / nocycle mode is $nocymode"
     return 0
    }
   }
@@ -515,6 +572,9 @@ proc mc:sc:cycle {} {
 
 bind raw - INVITE mc:sc:raw:invite
 proc mc:sc:raw:invite {from key arg} {
+ return [mc:sc:errchk mc:sc:raw:invite_ [list $from $key $arg]]
+}
+proc mc:sc:raw:invite_ {from key arg} {
  global mc_sc botnick
  scan $from {%[^!]!%[^@]@%s} nick ident host
  set hand [finduser $from]
@@ -533,10 +593,13 @@ proc mc:sc:raw:invite {from key arg} {
 
 bind notc - * mc:sc:notc:message
 proc mc:sc:notc:message {nick uhost hand arg {dest ""} {DCC_Check ""}} {
+ return [mc:sc:errchk mc:sc:notc:message_ [list $nick $uhost $hand $arg $dest $DCC_Check]]
+}
+proc mc:sc:notc:message_ {nick uhost hand arg {dest ""} {DCC_Check ""}} {
  global mc_sc botnick ; if {$dest == ""} {set dest $botnick}
  if {($dest != $botnick) || ($mc_sc(warn:message:notice) == "")} {return 0}
  if {([regexp -- {^DCC } $arg]) && ($DCC_Check == "")} {
-  utimer 5 "mc:sc:notc:message [list $nick $uhost $hand $arg $dest DCC_Check]"
+  utimer 5 [list mc:sc:notc:message $nick $uhost $hand $arg $dest DCC_Check]
   return 0
  }
  if {$mc_sc(act:strip)} {set arg [mc:sc:inter:strip:all $arg]}
@@ -555,6 +618,9 @@ proc mc:sc:notc:message {nick uhost hand arg {dest ""} {DCC_Check ""}} {
 
 bind msgm - * mc:sc:msgm:message
 proc mc:sc:msgm:message {nick uhost hand arg} {
+ return [mc:sc:errchk mc:sc:msgm:message_ [list $nick $uhost $hand $arg]]
+}
+proc mc:sc:msgm:message_ {nick uhost hand arg} {
  global mc_sc
  if {$mc_sc(warn:message:privmsg) == ""} {return 0}
  if {$mc_sc(act:strip)} {set arg [mc:sc:inter:strip:all $arg]}
@@ -573,15 +639,20 @@ proc mc:sc:msgm:message {nick uhost hand arg} {
 
 bind ctcp - "DCC" mc:sc:dcc:message
 proc mc:sc:dcc:message {nick uhost hand dest keyword arg} {
+ return [mc:sc:errchk mc:sc:dcc:message_ [list $nick $uhost $hand $dest $keyword $arg]]
+}
+proc mc:sc:dcc:message_ {nick uhost hand dest keyword arg} {
  global mc_sc botnick
  scan $arg {%s %s %s %s %s} cmd file ip port size
  if {($mc_sc(warn:message:dccsend) == "") || ($cmd != "SEND") ||
      ($dest != $botnick)} {return 0}
  set arg "dccsend $file"
- foreach utimer [string tolower [utimers]] {
-  set timer [lindex $utimer 1]
-  scan $timer {%s %s %s %s %s %s} t_cmd t_nick t_uhost t_hand t_arg t_dest t_dcc_test
-  if {[lindex $utimer 1] == [string tolower "mc:sc:notc:message [list $nick $uhost $hand $t_arg $t_dest $t_dcc_test]"]} {
+ foreach utimer  [string tolower [utimers]] {
+  set timer      [lindex $utimer 1]
+  set t_arg      [lindex $timer 4]
+  set t_dest     [lindex $timer 5]
+  set t_dcc_test [lindex $timer 6]
+  if {$timer == [string tolower [list mc:sc:notc:message $nick $uhost $hand $t_arg $t_dest $t_dcc_test]]} {
    killutimer [lindex $utimer 2];break
   }
  };if {$mc_sc(act:strip)} {set arg [mc:sc:inter:strip:all $arg]}
@@ -594,7 +665,10 @@ proc mc:sc:dcc:message {nick uhost hand dest keyword arg} {
  };if {$return} {return 0};mc:sc:message $nick $uhost $hand $arg
 }
 
-proc mc:sc:message {nick uhost hand method {channels {}}} {
+proc mc:sc:message {nick uhost hand method {channels ""}} {
+ return [mc:sc:errchk mc:sc:message_ [list $nick $uhost $hand $method $channels]]
+}
+proc mc:sc:message_ {nick uhost hand method {channels ""}} {
  global mc_sc botnick
  if {[string tolower $nick] == [string tolower $botnick]} {return 0}
  if {$channels == ""} {
@@ -605,7 +679,7 @@ proc mc:sc:message {nick uhost hand method {channels {}}} {
   };set mc_sc(ignore:$nick) 1
   utimer 5 "catch {unset mc_sc(ignore:[mc:sc:filt $nick])}"
   if {[info exists mc_sc(joind:active)]} {
-   utimer [expr $mc_sc(joind)+2] "mc:sc:message [list $nick $uhost $hand $method]"
+   utimer [expr $mc_sc(joind)+2] [list mc:sc:message $nick $uhost $hand $method]
    if {![string match "*unset mc_sc(joind:active)*" [utimers]]} {
     utimer $mc_sc(joind) "unset mc_sc(joind:active)"
    };return 0
@@ -620,7 +694,7 @@ proc mc:sc:message {nick uhost hand method {channels {}}} {
    }
    if {$found != ""} {
     foreach user $found {
-     utimer 5 "mc:sc:message [list $user [getchanhost $user] [nick2hand $user] $method]"
+     utimer 5 [list mc:sc:message $user [getchanhost $user] [nick2hand $user] $method]
     };return 0
    } {set channels [string tolower [channels]]}
   }
@@ -634,7 +708,7 @@ proc mc:sc:message {nick uhost hand method {channels {}}} {
    continue
   }
   if {![onchan $botnick $channel]} {
-   utimer [expr $mc_sc(joind)+2] "mc:sc:message [list $nick $uhost $hand $method $channel]"
+   utimer [expr $mc_sc(joind)+2] [list mc:sc:message $nick $uhost $hand $method $channel]
    continue
   }
   if {$mc_sc(warnings)} {
@@ -649,14 +723,18 @@ proc mc:sc:message {nick uhost hand method {channels {}}} {
 }
 
 proc mc:sc:punish {nick uhost hand chan warn method} {
+ return [mc:sc:errchk mc:sc:punish_ [list $nick $uhost $hand $chan $warn $method]]
+}
+proc mc:sc:punish_ {nick uhost hand chan warn method} {
  global mc_sc botnick {botnet-nick}
- scan $method {%s %s} method filename ; if {$method != "dccsend"} {set filename ""}
- set banmask [mc:sc:inter:masktype $nick!$uhost $mc_sc(bant)]
  if {![isop $botnick $chan]} {
   if {$mc_sc(relay)} {
    putallbots "spamcheck [encrypt $mc_sc(relay:key) "$mc_sc(relay:key)+${botnet-nick}"] [list $nick $uhost $hand $chan $warn $method]"
   }
  }
+ set filename ""
+ scan $method {%s %s} method filename ; if {$method != "dccsend"} {set filename ""}
+ set banmask [mc:sc:inter:masktype $nick!$uhost $mc_sc(bant)]
  if {(![isop $botnick $chan]) || (![onchan $nick $chan])} {
   if {($mc_sc(ban:anyhow)) && ([string trim $mc_sc(exc:ban) @!] != "-1") &&
       (![isban $banmask $chan]) && ([string trim $mc_sc(exc:ban) @!])} {
@@ -669,7 +747,7 @@ proc mc:sc:punish {nick uhost hand chan warn method} {
  }
  if {$warn} {
   set comment [mc:sc:inter:replace $mc_sc(warn:message:$method) "%filename $filename"]
-  putlog "Spam Check, warning $nick!$uhost ($chan): $comment"
+  putlog "$mc_sc(script), warning $nick!$uhost ($chan): $comment"
   if {($mc_sc(warn:msg)) && ($comment != "")} { putserv "PRIVMSG $nick :$comment" }
   set global [string match @* $mc_sc(warn:ban)]
   if {[string match *! $mc_sc(warn:ban)]} {set opt "sticky"} {set opt "none"}
@@ -679,10 +757,10 @@ proc mc:sc:punish {nick uhost hand chan warn method} {
   }
  } else {
   set comment [mc:sc:inter:replace $mc_sc(exc:message:$method) "%filename $filename"]
-  putlog "Spam Check, exceeded warnings for $nick!$uhost ($chan): $comment"
-  set global [string match @* $mc_sc(exec:ban)]
-  if {[string match *! $mc_sc(exec:ban)]} {set opt "sticky"} {set opt "none"}
-  set time [string trimleft $mc_sc(exec:ban) @!]
+  putlog "$mc_sc(script), exceeded warnings for $nick!$uhost ($chan): $comment"
+  set global [string match @* $mc_sc(exc:ban)]
+  if {[string match *! $mc_sc(exc:ban)]} {set opt "sticky"} {set opt "none"}
+  set time [string trimleft $mc_sc(exc:ban) @!]
   if {$comment != ""} {set x " :$comment"} {set x ""};putserv "KICK $chan $nick$x"
  }
  if {$time >= "0"} {
@@ -691,7 +769,7 @@ proc mc:sc:punish {nick uhost hand chan warn method} {
   }
   foreach channel $channels {
    if {(![mc:sc:inter:chanflagison $channel spamcheck]) ||
-       ([mc:sc:inter:extischanban $banmask $channel])} {continue}
+       ([mc:sc:inter:existchanban $banmask $channel])} {continue}
    putserv "MODE $channel +b $banmask"
   }
  }
@@ -706,6 +784,9 @@ proc mc:sc:punish {nick uhost hand chan warn method} {
 
 bind bot - spamcheck mc:sc:bot:relay
 proc mc:sc:bot:relay {from command arg} {
+ return [mc:sc:errchk mc:sc:bot:relay_ [list $from $command $arg]]
+}
+proc mc:sc:bot:relay_ {from command arg} {
  global mc_sc botnick
  set nick [lindex $arg 1] ; set uhost [lindex $arg 2] ; set hand [lindex $arg 3]
  set chan [lindex $arg 4] ; set warn [lindex $arg 5] ; set method [lindex $arg 6]
@@ -717,12 +798,15 @@ proc mc:sc:bot:relay {from command arg} {
   };return 0
  };set mc_sc(relayblock:$nick:$chan) 1
  utimer 10 "unset mc_sc(relayblock:[mc:sc:filt $nick:$chan])"
- putlog "Spam Check:  Bot relay from $from regarding $nick @ $chan."
+ putlog "$mc_sc(script):  Bot relay from $from regarding $nick @ $chan."
  mc:sc:punish $nick $uhost $hand $chan $warn $method
 }
 
 bind evnt - prerestart mc:sc:evnt:prestart
 proc mc:sc:evnt:prestart {type} {
+ return [mc:sc:errchk mc:sc:evnt:prestart_ [list $type]]
+}
+proc mc:sc:evnt:prestart_ {type} {
  set i 0
  foreach timer [utimers] {
   if {[string match "*channel set * -inactive*" $timer]} {
@@ -735,6 +819,10 @@ proc mc:sc:evnt:prestart {type} {
 ### Internal use Procs
 
 proc mc:sc:inter:masktype {uhost type} {
+ return [mc:sc:errchk mc:sc:inter:masktype_ [list $uhost $type]]
+}
+# v1.0
+proc mc:sc:inter:masktype_ {uhost type} {
  set ident_max-length 9
  set host_max-length 63
  scan $uhost {%[^!]!%[^@]@%s} nick ident host
@@ -758,22 +846,31 @@ proc mc:sc:inter:masktype {uhost type} {
 }
 
 proc mc:sc:inter:replace {string subs} {
+ return [mc:sc:errchk mc:sc:inter:replace_ [list $string $subs]]
+}
+proc mc:sc:inter:replace_ {string subs} {
  for {set i 0} {[lindex $subs $i] != ""} {incr i 2} {
   regsub -all -- [lindex $subs $i] $string [lindex $subs [expr $i+1]] string
  } ; return $string
 }
 
 proc mc:sc:inter:findchanuser {hostmask channel} {
+ return [mc:sc:errchk mc:sc:inter:findchanuser_ [list $hostmask $channel]]
+}
+proc mc:sc:inter:findchanuser_ {hostmask channel} {
  if {![validchan $channel]} {return -code error "no such channel record"}
  set buffer "" ; set hostmask [string tolower $hostmask]
  foreach user [chanlist $channel] {
   if {[string match $hostmask [string tolower $user![getchanhost $user $channel]]]} {
    lappend buffer $user
   }
- };return $buffer
+ }; return $buffer
 }
 
 proc mc:sc:inter:chanflagison {chan flag} {
+ return [mc:sc:errchk mc:sc:inter:chanflagison_ [list $chan $flag]]
+}
+proc mc:sc:inter:chanflagison_ {chan flag} {
  foreach info [string tolower [channel info $chan]] {
   if {[string range $info 1 end] != [string tolower $flag]} {continue}
   if {[string index $info 0] == "-"} {
@@ -782,7 +879,10 @@ proc mc:sc:inter:chanflagison {chan flag} {
  };return 0
 }
 
-proc mc:sc:inter:extischanban {banmask channel} {
+proc mc:sc:inter:existchanban {banmask channel} {
+ return [mc:sc:errchk mc:sc:inter:existchanban_ [list $banmask $channel]]
+}
+proc mc:sc:inter:existchanban_ {banmask channel} {
  foreach lban [chanbans $channel] {
   if {[string match [lindex $lban 0] $banmask]} {return 1}
  };return 0
@@ -798,65 +898,95 @@ proc mc:sc:inter:strip:all {ar} {
  return [mc:sc:inter:strip:reverse [mc:sc:inter:strip:uline [mc:sc:inter:strip:bold [mc:sc:inter:strip:color $ar]]]]
 }
 
-#proc mc:sc:filt {data} {
-# return [join [split [join [split [join [split [join [split [join [split [join [split $data \\] \\\\] \[] \\\[] \]] \\\]] \}] \\\}] \{] \\\{] \"] \\\"]
-#}
 proc mc:sc:filt {data} {
   regsub -all -- \\\\ $data \\\\\\\\ data ; regsub -all -- \\\[ $data \\\\\[ data ; regsub -all -- \\\] $data \\\\\] data
   regsub -all -- \\\} $data \\\\\} data ; regsub -all -- \\\{ $data \\\\\{ data ; regsub -all -- \\\" $data \\\\\" data ; return $data
 }
 
+## SVS v2.0
+if {(![info exists mc_sc(svs:enabled)]) ||
+    (![regexp -- {^(0|1)$} $mc_sc(svs:enabled)])} {set mc_sc(svs:enabled) 0}
+if {(![info exists mc_sc(svs:check)]) ||
+    ([regexp -- {[^0-9]} $mc_sc(svs:check)])} {set mc_sc(svs:check) 0}
+if {![info exists mc_sc(svs:notify)]} {set mc_sc(svs:notify) $owner}
+if {(![info exists mc_sc(svs:stableonly)]) ||
+    (![regexp -- {^(0|1)$} $mc_sc(svs:stableonly)])} {set mc_sc(svs:stableonly) 0}
+foreach bind [binds mc:sc:svs:time] {
+ unbind [lindex $bind 0] [lindex $bind 1] [lindex $bind 2] [lindex $bind 4]
+}
+foreach command [info commands mc:sc:svs:time] {rename $command ""}
 if {$mc_sc(svs:enabled)} {
  if {($mc_sc(svs:check) > "23") || ($mc_sc(svs:check) < "0")} {set mc_sc(svs:check) 00}
  if {[string length $mc_sc(svs:check)] == "1"} {set mc_sc(svs:check) 0$mc_sc(svs:check)}
- if {$mc_sc(svs:stableonly)} {
-  set mc_sc(svs:script) [string range $mc_sc(svs:script) 0 [expr [string length $mc_sc(svs:script)]-4]]999
- }
- catch {unbind time - "00 $mc_sc(svs:oldcheck) * * *" mc:sc:svs:time}
- set mc_sc(svs:oldcheck) $mc_sc(svs:check)
- bind time - "00 $mc_sc(svs:check) * * *" mc:sc:svs:time
- proc mc:sc:svs:time {min hour day month year} {
+ bind time - "00 $mc_sc(svs:check) *" mc:sc:svs:time
+ proc mc:sc:svs:time {{args ""}} {
   global mc_sc
-  catch {control [connect [lindex $mc_sc(svs:server) 0] [lindex $mc_sc(svs:server) 1]] mc:sc:svs:interface}
+  if {[catch {socket -async $mc_sc(svs:server) $mc_sc(svs:port)} sid]} {;\
+   putlog "SVS Error\[$mc_sc(svs:script)/$mc_sc(svs:version)\]:  $sid"
+   return 1
+  }
+  fconfigure $sid -blocking 0 -buffering line
+  set tout [after 60000 "mc:sc:svs:interface $sid timeout"]
+  fileevent $sid readable "mc:sc:svs:interface $sid $tout"
+  puts $sid "GET $mc_sc(svs:get)?$mc_sc(svs:query) HTTP/1.0\
+           \nHost: $mc_sc(svs:server)\n"
+  flush $sid
  }
 }
-proc mc:sc:svs:interface {idx args} {
- global mc_sc;set args [join $args]
- switch -- [lindex $args 0] {
-  "" {return 1}
-  000 {putdcc $idx q}
-  002 {putdcc $idx [lindex $mc_sc(svs:script) 0]}
-  003 {
-   set args [lrange $args 1 end]
-   if {[lindex $args 0] != [lindex $mc_sc(svs:script) 0]} {return 0}
-   putdcc $idx q
-   if {[lindex $args 1] > [lindex $mc_sc(svs:script) 1]} {
-    set note [mc:sc:inter:replace [lindex $args 7] "%0 {[lindex $args 0]} %1 {[lindex $args 1]} %2 {[lindex $args 2]}"]
-    set note [mc:sc:inter:replace $note "%3 {[lindex $args 3]} %4 {[lindex $args 4]} %5 {[lindex $args 5]}"]
-    set note [mc:sc:inter:replace $note "%6 {[lindex $args 6]} %8 {[lindex $args 8]} %version {$mc_sc(version)}"]
-    set note [mc:sc:inter:replace $note "%9 {[lindex $args 9]} %10 {[lindex $args 10]} %11 {[lindex $args 11]}"]
-    set note [mc:sc:inter:replace $note "%12 {[lindex $args 12]} %13 {[lindex $args 13]} %14 {[lindex $args 14]}"]
-    set note [mc:sc:inter:replace $note "%15 {[lindex $args 15]} %16 {[lindex $args 16]} %17 {[lindex $args 17]}"]
-    set note [mc:sc:inter:replace $note "%18 {[lindex $args 18]} %19 {[lindex $args 19]} %20 {[lindex $args 20]}"]
-    foreach notify [join [split $mc_sc(svs:notify) ",;"]] {
-     set outnote [mc:sc:inter:replace $note "%nick {$notify}"]
-     if {[string match "*$outnote*" "[notes $notify -[notes $notify]]"]} {
-      set cont 0
-      foreach unote [notes $notify -[notes $notify]] {
-       if {$outnote == [lindex $unote 2]} {set cont 1;break}
-      };if {$cont} {continue}
-     }
-     switch -- [sendnote SVS $notify $outnote] {
-      0 {
-       if {![validuser $notify]} {set x "invalid user"} else {set x "unknown reason"}
-       putlog "MC SVS for [lindex $mc_bw(svs:script) 0] had some errors updating $notify on current version of script; $x"
+proc mc:sc:svs:interface {sid tout} {
+ global mc_sc
+ if {$tout == "timeout"} {
+  putlog "SVS Warning\[$mc_sc(svs:script)/$mc_sc(svs:version)\]:  SVS Server timed out."
+  close $sid
+  return 0
+ }; after cancel $tout
+ set temp 0
+ while {![eof $sid]} {
+  gets $sid get
+  if {$temp < "2"} {
+   if {$get == ""} {incr temp; if {$temp == "1"} {set temp 2}}
+   continue
+  }; if {$get == ""} {continue}
+  switch -- [lindex $get 0] {
+   003 {
+    set reply [lrange $get 1 end]
+    if {[lindex $reply 0] != $mc_sc(svs:script)} {
+     putlog "SVS Error\[$mc_sc(svs:script)/$mc_sc(svs:version)\]:  SVS Server sent wrong info, got [lindex $reply 0]"
+     break   
+    }
+    if {$mc_sc(svs:stableonly)} {
+     set temp [string range $mc_sc(svs:version) 0 8]999
+    } else {set temp [string range $mc_sc(svs:version) 0 11]}
+    if {[lindex $reply 1] > $temp} {
+     set note [lindex $reply 5]
+     regsub -- %0 $note [lindex $reply 0] note
+     regsub -- %1 $note [lindex $reply 1] note
+     regsub -- %2 $note [lindex $reply 2] note
+     regsub -- %3 $note [lindex $reply 3] note
+     regsub -- %4 $note [lindex $reply 4] note
+     regsub -- %version $note $mc_sc(version) note
+     foreach to [split $mc_sc(svs:notify) ",; "] {
+      if {$to == ""} {continue}
+      regsub -- %nick $note $to outnote
+      if {[string match *$outnote* [set unotes [notes $to -[notes $to]]]]} {
+       set temp 0
+       foreach unote $unotes {
+        if {$outnote == [lindex $unote 2]} {set temp 1; break}
+       }; if {$temp} {continue}
       }
-      3 {putlog "MC SVS for [lindex $mc_bw(svs:script) 0] had some errors updating $notify on current version of script; notebox too full!"}
+      switch -- [sendnote SVS $to $outnote] {
+       0 {
+        if {![validuser $notify]} {set x "invalid user"} else {set x "unknown error"}
+        putlog "SVS Error\[$mc_sc(svs:script)/$mc_sc(svs:version)\]:  Trying to send note to $to, $x."
+       }
+       3 {putlog "SVS Error\[$mc_sc(svs:script)/$mc_sc(svs:version)\]:  Trying to send note to $to, notebox too full!"}
+      }
      }
     }
    }
   }
- };return 0
+ }; close $sid
 }
+## ^
 
-putlog "Spam Check $mc_sc(version) by MC_8 loaded."
+putlog "$mc_sc(script) $mc_sc(version) by MC_8 loaded."
